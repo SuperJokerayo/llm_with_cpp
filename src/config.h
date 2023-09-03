@@ -3,6 +3,7 @@
 
 
 /**
+ *  network config read from checkpoint, not the config from config.ini
  *  export.py pack header order:
  *  dim, hidden_dim, n_layers, n_heads, n_kv_heads, vocab_size, seq_len
  * 

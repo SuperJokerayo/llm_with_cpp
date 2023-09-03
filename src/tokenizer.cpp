@@ -1,78 +1,54 @@
 #include "tokenizer.h"
 
-#include <cstdio>
-#include <cstdlib>
+#include <iostream>
 
-#include <algorithm>
-
-void Tokenizer::init_tokenizer(const char* tokenizer_path, int vocab_size_) {
-    vocab_size = vocab_size_;
-    vocab.resize(vocab_size);
-    vocab_scores.resize(vocab_size);
-    sorted_vocab.clear();
-
-    for(int i = 0; i < 256; i++) {
-        byte_pieces[i * 2] = (unsigned char)i;
-        byte_pieces[i * 2 + 1] = '\0';
+void Tokenizer::init_tokenizer(const char* tokenizer_path) {
+    const auto status = processor.Load(tokenizer_path);
+    if(!status.ok()) {
+        std::cerr << status.ToString() << std::endl;
     }
 
-    FILE *fp = fopen(tokenizer_path, "rb");
-    if (!fp) {
-        fprintf(stderr, "couldn't load %s\n", tokenizer_path); 
-        exit(EXIT_FAILURE); 
-    }
-    if (fread(&max_token_length, sizeof(int), 1, fp) != 1) { 
-        fprintf(stderr, "failed read\n"); 
-        exit(EXIT_FAILURE); 
-    }
-    int len;
-    for (int i = 0; i < vocab_size; i++) {
-        
-        if (fread(&vocab_scores[i], sizeof(float), 1, fp) != 1) {
-            fprintf(stderr, "failed read\n"); 
-            exit(EXIT_FAILURE);
-        }
-
-        if (fread(&len, sizeof(int), 1, fp) != 1) { 
-            fprintf(stderr, "failed read\n"); 
-            exit(EXIT_FAILURE); 
-        }
-
-        vocab[i].resize(len);
-        if (fread(&vocab[i], len, 1, fp) != 1) { 
-            fprintf(stderr, "failed read\n"); 
-            exit(EXIT_FAILURE); 
-        }
-    }
-    fclose(fp);
+    n_words = processor.GetPieceSize();
+    bos_id = processor.bos_id();
+    eos_id = processor.eos_id();
+    pad_id = processor.pad_id();
 }
 
 void Tokenizer::encode(
     std::string text, 
-    char bos, 
-    char eos, 
-    std::vector<int> tokens, 
-    std::vector<int> n_tokens
-) {
+    bool bos, 
+    bool eos, 
+    std::vector<int>& tokens
+) { 
+    
     if(text.empty()) {
-        fprintf(stderr, "cannot encode NULL text\n"); 
+        std::cerr << "Empty text cannot be encoded!" << std::endl;
         exit(EXIT_FAILURE);
     }
+    
+    processor.Encode(text, &tokens);
 
-    if(sorted_vocab.empty()) {
-        sorted_vocab.resize(vocab_size);
-        for(int i = 0; i < vocab_size; i++) {
-            sorted_vocab[i].str = vocab[i];
-            sorted_vocab[i].id = i;
-        }
-        std::sort(sorted_vocab.begin(), sorted_vocab.end(), [](const TokenIndex& a, const TokenIndex& b) {
-            return a.str < b.str;
-        });
+    if(bos) {
+        tokens.insert(tokens.begin(), bos_id);
     }
 
-    std::string str_buffer("\0", (max_token_length * 2 + 1 + 2));
-    size_t str_len = 0;
-
-    n_tokens.clear();
-
+    if(eos) {
+        tokens.emplace_back(eos_id);
+    }
 }
+
+void Tokenizer::decode(
+    std::vector<int>& tokens,
+    std::string& response
+) {
+    processor.Decode(tokens, &response);
+}
+
+void Tokenizer::decode(
+    int token,
+    std::string& response
+) {
+    processor.Decode(std::vector<int>{token}, &response);
+}
+
+

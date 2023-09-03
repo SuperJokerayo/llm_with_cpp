@@ -17,31 +17,21 @@ void resize_tensor_float_3d(tensor_float_3d& tensor, int size1, int size2, int s
     tensor_float_3d(size1, tensor_float_2d(size2, tensor_float_1d(size3))).swap(tensor);
 }
 
+
 void init_tensor_from_file(tensor_float_1d& tensor, FILE* fp) {
     int size = tensor.size();
-    if (fread(tensor.data(), sizeof(float), size, fp) != 1) {
+    if (fread(tensor.data(), sizeof(float) * size, 1, fp) != 1) {
         fprintf(stderr, "Couldn't read weights!\n");
         exit(EXIT_FAILURE); 
     }
 }
 
 void init_tensor_from_file(tensor_float_2d& tensor, FILE* fp) {
-    int size1 = tensor.size();
-    int size2 = tensor[0].size();
-    if (fread(tensor.data(), sizeof(float), size1 * size2, fp) != 1) {
-        fprintf(stderr, "Couldn't read weights!\n");
-        exit(EXIT_FAILURE); 
-    }
+    for(auto& t : tensor) init_tensor_from_file(t, fp);
 }
 
 void init_tensor_from_file(tensor_float_3d& tensor, FILE* fp) {
-    int size1 = tensor.size();
-    int size2 = tensor[0].size();
-    int size3 = tensor[0][0].size();
-    if (fread(tensor.data(), sizeof(float), size1 * size2 * size3, fp) != 1) {
-        fprintf(stderr, "Couldn't read weights!\n");
-        exit(EXIT_FAILURE);
-    }
+    for(auto& t : tensor) init_tensor_from_file(t, fp);
 }
 
 void rmsnorm(
@@ -83,7 +73,7 @@ void matmul(
     for(j = 0; j < d; j++) {
         float val = 0.0f;
         for(int k = 0; k < n; k++) {
-            val += w[j][k] * x[j];
+            val += w[j][k] * x[k];
         }
         xout[j] = val;
     }
@@ -141,9 +131,9 @@ void Transformer::init_transformer(const char* checkpoint_path) {
         fprintf(stderr, "Couldn't open file %s!\n", checkpoint_path); 
         exit(EXIT_FAILURE); 
     }
-
+    
     if (fread(&config, sizeof(Config), 1, fp) != 1) { 
-        fprintf(stderr, "Couldn't read config!\n");
+        fprintf(stderr, "Couldn't read network config!\n");
         exit(EXIT_FAILURE); 
     }
 
@@ -175,7 +165,7 @@ void Transformer::init_transformerweight(FILE* fp) {
 
     resize_tensor_float_2d(weights.freq_cis_real, config.seq_len, head_size / 2);
     resize_tensor_float_2d(weights.freq_cis_imag, config.seq_len, head_size / 2);
-
+    
     init_tensor_from_file(weights.token_embedding_table, fp);
     init_tensor_from_file(weights.rms_att_weight, fp);
     init_tensor_from_file(weights.wq, fp);
@@ -214,19 +204,17 @@ void Transformer::forward(int token, int pos) {
     TransformerWeights* w = &weights;
     RunState* s = &state;
 
-    tensor_float_1d* x = &s -> x;
     int dim = p -> dim;
     int kv_dim = dim * p -> n_kv_heads / p -> n_heads;
     int kv_mul = p -> n_heads / p -> n_kv_heads;
     int hidden_dim = p -> hidden_dim;
     int head_size = dim / p -> n_heads;
 
-    copy(*x, w -> token_embedding_table[token]);
-
-    for(int l = 0; l < p -> n_layers; l++) {
+    copy(s -> x, w -> token_embedding_table[token]);
+    for(int l = 0; l < p -> n_layers; ++l) {
 
         // attention rmsnorm
-        rmsnorm(s -> xb, *x, w -> rms_att_weight[l]);
+        rmsnorm(s -> xb, s -> x, w -> rms_att_weight[l]);
 
         // attention qkv
         matmul(s -> q, s -> xb, w -> wq[l]);
@@ -243,14 +231,12 @@ void Transformer::forward(int token, int pos) {
                 auto k1 = s -> k[st + i + 1];
                 auto fcr = w -> freq_cis_real[pos][i / 2];
                 auto fci = w -> freq_cis_imag[pos][i / 2];
-
                 s -> q[st + i] = q0 * fcr - q1 * fci;
                 s -> q[st + i + 1] = q0 * fci + q1 * fcr;
                 s -> k[st + i] = k0 * fcr - k1 * fci;
                 s -> k[st + i + 1] = k0 * fci + k1 * fcr;
             }
         }
-
         // save k/v in cache
         copy(s -> key_cache[l][pos], s -> k);
         copy(s -> value_cache[l][pos], s -> v);
@@ -294,7 +280,7 @@ void Transformer::forward(int token, int pos) {
 
         // SwiGLU non-linearity 
         for(int i = 0; i < hidden_dim; ++i) {
-            s -> hb[i] *= (1.0f / (1.0f + exp(-s -> hb2[i]))) * s -> hb2[i];
+            s -> hb[i] *= (1.0f / (1.0f + exp(-s -> hb[i]))) * s -> hb2[i];
         }
 
         // final matmul to get the output of the ffn
@@ -306,5 +292,4 @@ void Transformer::forward(int token, int pos) {
     rmsnorm(s -> x, s -> x, w -> rms_final_weight);
 
     matmul(s -> logits, s -> x, w -> token_embedding_table);
-
 }

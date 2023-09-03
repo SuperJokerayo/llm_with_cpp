@@ -1,35 +1,35 @@
 #ifndef TOKENIZER_H_
 #define TOKENIZER_H_
 
-#include <vector>
-#include <string>
-
-class TokenIndex {
-public:
-    std::string str;
-    int id;
-};
+#include <sentencepiece_processor.h>
 
 class Tokenizer {
 public:
-    std::vector<std::string> vocab;
-    std::vector<float> vocab_scores;
-    std::vector<TokenIndex> sorted_vocab;
-    int vocab_size;
-    unsigned int max_token_length;
-    unsigned char byte_pieces[512];
+    sentencepiece::SentencePieceProcessor processor;
+    int n_words;
+    int bos_id;
+    int eos_id;
+    int pad_id;
 
 public:
-    void init_tokenizer(const char* tokenizer_path, int vocab_size_);
+    void init_tokenizer(const char* tokenizer_path);
 
     void encode(
         std::string text, 
-        char bos, 
-        char eos, 
-        std::vector<int> tokens, 
-        std::vector<int> n_tokens
+        bool bos, 
+        bool eos, 
+        std::vector<int>& tokens
     );
-    void decode(int prev_token, int token);
+
+    void decode(
+        std::vector<int>& tokens,
+        std::string& response
+    );
+
+    void decode(
+        int token, 
+        std::string& response
+    );
 
 };
 
