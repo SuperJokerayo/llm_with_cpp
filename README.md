@@ -5,6 +5,10 @@ Only for fun.
 
 Referenced from [llama2.c](https://github.com/leloykun/llama2.cpp/tree/master)
 
+## Platform
+
+- Ubuntu 22.04.3
+- GCC 17
 ## Usage
 1. Clone this project.
 
@@ -45,6 +49,12 @@ and you can run with:
 
 5. The config parameters are written in `config.ini`, and contum config is supported.
 
+6. You can also run the shell script if dependencies are installed manually.
+
+```bash
+bash ./run.sh
+```
+
 ## License
 
-Have a look at the [license file](./LICENSE) for details.
+Have a look at the [LICENSE](./LICENSE) file for details.
