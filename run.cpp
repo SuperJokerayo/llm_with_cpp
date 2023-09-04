@@ -38,6 +38,9 @@ void read_config(std::unordered_map<std::string, std::string>& config_map) {
 }
 
 int main() {
+
+    std::cout.tie(NULL);
+
     std::cout << "Loading config..." << std::endl;
     std::unordered_map<std::string, std::string> config_map;
     read_config(config_map);
@@ -68,15 +71,16 @@ int main() {
         config_error();
 
     std::cout << "Loading checkpoint..." << std::endl;
-    std::cout << checkpoint_path << std::endl;
+    // std::cout << checkpoint_path << std::endl;
+
+    Tokenizer tokenizer;
+    tokenizer.init_tokenizer(tokenizer_path);
+
     Transformer transformer;
-    transformer.init_transformer(checkpoint_path.c_str());
+    transformer.init_transformer(checkpoint_path);
 
     if (steps == 0 or steps > transformer.config.seq_len) 
         steps = transformer.config.seq_len;
-
-    Tokenizer tokenizer;
-    tokenizer.init_tokenizer(tokenizer_path.c_str());
 
     Sampler sampler;
     sampler.init_sampler(top_p, temperature, rng_seed);
