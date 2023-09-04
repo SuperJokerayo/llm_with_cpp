@@ -51,13 +51,12 @@ void rmsnorm(
     }
 }
 
-void softmax(tensor_float_1d& x) {
-    int size = x.size();
-    auto max_val = *std::max_element(x.begin(), x.end());
-    auto sum = std::accumulate(x.begin(), x.end(), 0.0f, [max_val](float a, float b) {
+void softmax(tensor_float_1d& x, int pos) {
+    auto max_val = *std::max_element(x.begin(), x.begin() + pos);
+    auto sum = std::accumulate(x.begin(), x.begin() + pos, 0.0f, [max_val](float a, float b) {
         return a + exp(b - max_val);
     });
-    std::for_each(x.begin(), x.end(), [sum](int a){return a / sum;});
+    std::for_each(x.begin(), x.begin() + pos, [sum](int a){return a / sum;});
 }
 
 
@@ -125,15 +124,15 @@ void copy(
 }
 
 
-void Transformer::init_transformer(const char* checkpoint_path) {
-    FILE *fp = fopen(checkpoint_path, "rb");
+void Transformer::init_transformer(const std::string checkpoint_path) {
+    FILE *fp = fopen(checkpoint_path.c_str(), "rb");
     if (!fp) {
-        fprintf(stderr, "Couldn't open file %s!\n", checkpoint_path); 
+        std::cerr << "Couldn't open file" << checkpoint_path << "!" << std::endl;
         exit(EXIT_FAILURE); 
     }
     
     if (fread(&config, sizeof(Config), 1, fp) != 1) { 
-        fprintf(stderr, "Couldn't read network config!\n");
+        std::cerr << "Couldn't read network config!\n";
         exit(EXIT_FAILURE); 
     }
 
@@ -254,14 +253,14 @@ void Transformer::forward(int token, int pos) {
                 score /= norm_factor;
                 s -> att[t] = score;
             }
-            softmax(s -> att);
+            softmax(s -> att, pos);
 
             for(int i = 0; i < head_size; ++i) {
                 auto val = 0.0f;
                 for(int t = 0; t < pos; ++t) {
                     val += s -> att[t] * s -> value_cache[l][t][h * head_size + i];
                 }
-                s -> v[h * head_size + i] = val;
+                s -> xb[h * head_size + i] = val;
             }
         }
 

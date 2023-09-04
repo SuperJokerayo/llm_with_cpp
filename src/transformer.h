@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include <vector>
+#include <string>
 
 #include "config.h"
 
@@ -67,7 +68,7 @@ public:
 
     void init_transformerweight(FILE* fp);
     void init_runstate();
-    void init_transformer(const char* checkpoint_path);
+    void init_transformer(const std::string checkpoint_path);
     void forward(int token, int pos);
 };
 

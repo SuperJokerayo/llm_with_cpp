@@ -12,7 +12,7 @@ public:
     int pad_id;
 
 public:
-    void init_tokenizer(const char* tokenizer_path);
+    void init_tokenizer(const std::string tokenizer_path);
 
     void encode(
         std::string text, 

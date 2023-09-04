@@ -11,7 +11,7 @@ static void softmax(std::vector<float>& x) {
     auto sum = std::accumulate(x.begin(), x.end(), 0.0f, [max_val](float a, float b) {
         return a + std::exp(b - max_val);
     });
-    std::for_each(x.begin(), x.end(), [sum](int a){return a / sum;});
+    std::for_each(x.begin(), x.end(), [sum](float a){return a / sum;});
 }
 
 unsigned int random_u32(unsigned long long *state) {
@@ -31,12 +31,12 @@ int Sampler::sample_top_p(std::vector<float>& logits) {
     const float cutoff = (1.0f - p) / (n - 1);
 
     for(int i = 0; i < n; i++) {
-        if(logits[i] > cutoff) {
+        if(logits[i] >= cutoff) {
             candidates.push_back({logits[i], i});
         }
     }
 
-    std::sort(candidates.begin(), candidates.end(), [](auto& a, auto& b) {
+    std::sort(candidates.begin(), candidates.end(), [](std::pair<float, int>& a, std::pair<float, int>& b) {
         return a.first > b.first;
     }); 
 

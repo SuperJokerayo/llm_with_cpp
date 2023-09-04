@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-void Tokenizer::init_tokenizer(const char* tokenizer_path) {
+void Tokenizer::init_tokenizer(const std::string tokenizer_path) {
     const auto status = processor.Load(tokenizer_path);
     if(!status.ok()) {
         std::cerr << status.ToString() << std::endl;

@@ -60,22 +60,15 @@ void LLM::generate(
         if(next == tokenizer -> eos_id) {
             break;
         }
-
-        // std::string response = "";
-        // tokenizer -> decode(next, response);
-        // safe_printf(response);
-        // std::cout << response;
-        // fflush(stdout);
         tokens.push_back(next);
         token = next;
         if (start == 0) { start = time_in_ms(); }
     }
-    for(auto t : tokens) std::cout << t << " ";
-    std::cout << std::endl;
+    // for(auto t : tokens) std::cout << t << " ";
+    // std::cout << std::endl;
     std::string response = "";
     tokenizer -> decode(tokens, response);
-    std::cout << response;
-    std::cout << std::endl;
+    std::cout << response << std::endl;
 
     if (pos > 1) {
         long end = time_in_ms();
