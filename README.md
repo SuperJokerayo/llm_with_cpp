@@ -47,7 +47,7 @@ and you can run with:
 ./bin/run
 ```
 
-5. The config parameters are written in `config.ini`, and contum config is supported.
+5. The config parameters are written in `config.ini`, and custom config is supported.
 
 6. You can also run the shell script if dependencies are installed manually.
 
